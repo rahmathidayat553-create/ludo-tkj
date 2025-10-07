@@ -6,7 +6,7 @@ import type { GameContextType, Piece as PieceType, PlayerColor } from '../types'
 
 const LudoBoard: React.FC = () => {
     const { gameState, movePiece, loggedInUser } = useContext(GameContext) as GameContextType;
-    const { players, currentTurn, diceValue } = gameState;
+    const { players, currentTurn, diceValue, animatedPiece } = gameState;
 
     const movablePieces = useMemo(() => {
         if (!diceValue || currentTurn !== loggedInUser?.color) return new Set();
@@ -132,6 +132,7 @@ const LudoBoard: React.FC = () => {
                     const top = `${(pos.row - 1) * (100 / 15)}%`;
                     const left = `${(pos.col - 1) * (100 / 15)}%`;
                     const size = `${100 / 15}%`;
+                    const isBouncing = animatedPiece === `${piece.color}-${piece.id}`;
 
                     return (
                         <Piece
@@ -139,6 +140,7 @@ const LudoBoard: React.FC = () => {
                             piece={piece}
                             onClick={() => movePiece(piece)}
                             isMovable={movablePieces.has(`${piece.color}-${piece.id}`)}
+                            isBouncing={isBouncing}
                             style={{
                                 position: 'absolute',
                                 top,

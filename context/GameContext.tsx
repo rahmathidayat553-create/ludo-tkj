@@ -1,4 +1,4 @@
-import React, { createContext, useState, useCallback } from 'react';
+import React, { createContext, useState, useCallback, useEffect } from 'react';
 // Fix: Import PlayerColor as a value, not just a type
 import type { GameState, Player, Piece, User, GameContextType } from '../types';
 import { PieceState, UserRole, PlayerColor } from '../types';
@@ -28,12 +28,24 @@ const initialGameState = (): GameState => {
     isRolling: false,
     winner: null,
     message: 'Giliran pemain Merah. Kocok dadu!',
+    animatedPiece: null,
   };
 };
 
 export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [gameState, setGameState] = useState<GameState>(initialGameState);
   const [loggedInUser, setLoggedInUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    if (gameState.animatedPiece) {
+      // The bounce animation is 500ms and starts after a 500ms delay (for the slide).
+      // So we clear it after 1000ms total.
+      const timer = setTimeout(() => {
+        setGameState(prev => ({ ...prev, animatedPiece: null }));
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.animatedPiece]);
 
   const login = (username: string, pass: string): boolean => {
     if (username === 'admin' && pass === 'password123') {
@@ -189,6 +201,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       nextState.message = `${piece.color.toUpperCase()} memenangkan permainan!`;
     }
 
+    // Set the piece to be animated
+    nextState.animatedPiece = `${pieceToMove.color}-${pieceToMove.id}`;
     // Reset dice value for the next action
     nextState.diceValue = null;
 

@@ -32,6 +32,7 @@ export interface GameState {
   isRolling: boolean;
   winner: PlayerColor | null;
   message: string;
+  animatedPiece?: string | null;
 }
 
 export enum UserRole {
