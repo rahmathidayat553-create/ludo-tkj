@@ -24,7 +24,7 @@ const Piece: React.FC<PieceProps> = ({ piece, onClick, isMovable, style }) => {
   return (
     <div
       onClick={isMovable ? onClick : undefined}
-      className={`absolute w-2/3 h-2/3 sm:w-5/6 sm:h-5/6 rounded-full flex items-center justify-center transition-all duration-300 transform hover:scale-110 ${style ? '' : 'z-10'}`}
+      className={`absolute w-2/3 h-2/3 sm:w-5/6 sm:h-5/6 rounded-full flex items-center justify-center transition-all duration-500 ease-in-out transform hover:scale-110 ${style ? '' : 'z-10'}`}
       style={style}
     >
       <div className={`w-full h-full rounded-full border-4 ${colorClasses[piece.color]} shadow-lg flex items-center justify-center ${movableClasses}`}>

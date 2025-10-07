@@ -11,7 +11,7 @@ const initialGameState = (): GameState => {
   PLAYER_COLORS.forEach(color => {
     players[color] = {
       color: color,
-      name: `Player ${color.charAt(0).toUpperCase() + color.slice(1)}`,
+      name: `Pemain ${color.charAt(0).toUpperCase() + color.slice(1)}`,
       pieces: Array.from({ length: 4 }, (_, i) => ({
         id: i,
         color: color,
@@ -27,7 +27,7 @@ const initialGameState = (): GameState => {
     diceValue: null,
     isRolling: false,
     winner: null,
-    message: 'Red player\'s turn. Roll the dice!',
+    message: 'Giliran pemain Merah. Kocok dadu!',
   };
 };
 
@@ -58,7 +58,8 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (prev.winner) return prev;
       const currentIndex = PLAYER_COLORS.indexOf(prev.currentTurn);
       const nextTurn = PLAYER_COLORS[(currentIndex + 1) % PLAYER_COLORS.length];
-      return { ...prev, currentTurn: nextTurn, diceValue: null, message: `${nextTurn.charAt(0).toUpperCase() + nextTurn.slice(1)}'s turn. Roll the dice!` };
+      const nextPlayerName = nextTurn.charAt(0).toUpperCase() + nextTurn.slice(1);
+      return { ...prev, currentTurn: nextTurn, diceValue: null, message: `Giliran pemain ${nextPlayerName}. Kocok dadu!` };
     });
   }, []);
 
@@ -69,13 +70,28 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return player.pieces.filter(p => {
       if (p.state === PieceState.FINISHED) return false;
       if (p.state === PieceState.HOME) return diceValue === 6;
+      
       if (p.state === PieceState.ACTIVE) {
+        let tempPos = p.position;
         const homeEntrance = HOME_ENTRANCE[p.color];
-        const startPos = START_POSITIONS[p.color];
-        const currentDist = (p.position + 52 - startPos) % 52;
-        return currentDist + diceValue < 57;
+        let enteredHomeRun = tempPos >= HOME_PATH_START;
+
+        for (let i = 0; i < diceValue; i++) {
+            if (!enteredHomeRun && tempPos === homeEntrance) {
+                tempPos = HOME_PATH_START;
+                enteredHomeRun = true;
+            } else if (enteredHomeRun) {
+                tempPos++;
+            } else {
+                tempPos = (tempPos + 1) % 52;
+            }
+        }
+        
+        const homeRunFinishPosition = HOME_PATH_START + 6;
+        // A move is valid if it doesn't overshoot the final home position
+        return tempPos <= homeRunFinishPosition;
       }
-      return true;
+      return false;
     });
   }, [gameState.players]);
 
@@ -91,84 +107,103 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const movablePieces = getMovablePieces(gameState.currentTurn, value);
 
       if (movablePieces.length === 0) {
-        setGameState(prev => ({...prev, message: `No moves for ${prev.currentTurn}. Switching turn.`}));
+        setGameState(prev => ({...prev, message: `Tidak ada gerakan untuk ${prev.currentTurn}. Ganti giliran.`}));
         setTimeout(() => changeTurn(), 1500);
       } else {
-        setGameState(prev => ({...prev, message: `${prev.currentTurn}, move a piece.`}));
+        setGameState(prev => ({...prev, message: `${prev.currentTurn}, gerakkan pion.`}));
       }
 
     }, 1000);
   };
   
   const movePiece = (piece: Piece) => {
-    const { diceValue, currentTurn, players } = gameState;
+    const { diceValue, currentTurn } = gameState;
+
+    // Basic validation: must be a dice roll, must be the current player's piece
     if (!diceValue || piece.color !== currentTurn) return;
 
+    // Create a deep copy of the state to mutate safely
     const nextState = JSON.parse(JSON.stringify(gameState)) as GameState;
     const player = nextState.players[piece.color];
     const pieceToMove = player.pieces.find(p => p.id === piece.id);
 
     if (!pieceToMove) return;
 
+    // A turn continues if the player rolls a 6, captures a piece, or finishes a piece.
     let turnContinues = diceValue === 6;
 
+    // 1. Handle moving a piece out of HOME
     if (pieceToMove.state === PieceState.HOME && diceValue === 6) {
         pieceToMove.state = PieceState.ACTIVE;
         pieceToMove.position = START_POSITIONS[piece.color];
-    } else if (pieceToMove.state === PieceState.ACTIVE) {
+    } 
+    // 2. Handle moving an ACTIVE piece
+    else if (pieceToMove.state === PieceState.ACTIVE) {
         const homeEntrance = HOME_ENTRANCE[piece.color];
-        const startPos = START_POSITIONS[piece.color];
         let newPos = pieceToMove.position;
+        let enteredHomeRun = newPos >= HOME_PATH_START;
 
+        // Calculate new position step-by-step to handle home-run transition
         for (let i = 0; i < diceValue; i++) {
-            if (newPos === homeEntrance) {
+            if (!enteredHomeRun && newPos === homeEntrance) {
                 newPos = HOME_PATH_START;
-            } else if (newPos >= HOME_PATH_START) {
+                enteredHomeRun = true;
+            } else if (enteredHomeRun) {
                 newPos++;
             } else {
                 newPos = (newPos + 1) % 52;
             }
         }
-
-        const homePathEnd = HOME_PATH_START + 5;
-        if(newPos > homePathEnd) {
-             pieceToMove.state = PieceState.FINISHED;
-             pieceToMove.position = FINISHED_POSITION;
-             turnContinues = true;
+        
+        const homeRunFinishPosition = HOME_PATH_START + 6; // The position that signifies a piece has finished the home run
+        if (newPos === homeRunFinishPosition) {
+            pieceToMove.state = PieceState.FINISHED;
+            pieceToMove.position = FINISHED_POSITION;
+            turnContinues = true; // Finishing a piece grants another turn
         } else {
+            // The move is only valid if it doesn't overshoot the home run.
+            // This logic is handled by `getMovablePieces`, so we assume the move is valid.
             pieceToMove.position = newPos;
         }
     }
-    
-    // Collision check
-    if (pieceToMove.state === PieceState.ACTIVE && !SAFE_POSITIONS.includes(pieceToMove.position)) {
-        Object.values(nextState.players).forEach(p => {
-            if (p.color !== piece.color) {
-                p.pieces.forEach(opponentPiece => {
+
+    // 3. Collision Detection (only for active pieces on the main board)
+    if (pieceToMove.state === PieceState.ACTIVE && pieceToMove.position < HOME_PATH_START && !SAFE_POSITIONS.includes(pieceToMove.position)) {
+        Object.values(nextState.players).forEach(otherPlayer => {
+            if (otherPlayer.color !== piece.color) {
+                otherPlayer.pieces.forEach(opponentPiece => {
                     if (opponentPiece.position === pieceToMove.position) {
-                        opponentPiece.position = -1;
+                        opponentPiece.position = -1; // Send back to home
                         opponentPiece.state = PieceState.HOME;
-                        turnContinues = true;
+                        turnContinues = true; // Capturing a piece grants another turn
                     }
                 });
             }
         });
     }
 
-    // Check for winner
-    const allFinished = player.pieces.every(p => p.state === PieceState.FINISHED);
-    if (allFinished) {
+    // 4. Check for a winner
+    const allPiecesFinished = player.pieces.every(p => p.state === PieceState.FINISHED);
+    if (allPiecesFinished) {
       nextState.winner = piece.color;
-      nextState.message = `${piece.color.toUpperCase()} wins the game!`;
+      nextState.message = `${piece.color.toUpperCase()} memenangkan permainan!`;
     }
 
+    // Reset dice value for the next action
     nextState.diceValue = null;
+
+    // Update the game state with all the changes
     setGameState(nextState);
 
-    if (!turnContinues && !nextState.winner) {
+    // 5. Determine the next action (change turn or roll again)
+    if (nextState.winner) {
+        return; // Game over, no more turns
+    }
+
+    if (turnContinues) {
+        setGameState(prev => ({...prev, message: `Giliran ${prev.currentTurn}. Kocok lagi!`}));
+    } else {
         changeTurn();
-    } else if (!nextState.winner) {
-        setGameState(prev => ({...prev, message: `${prev.currentTurn}'s turn. Roll again!`}));
     }
   };
 

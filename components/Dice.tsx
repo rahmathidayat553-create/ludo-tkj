@@ -47,7 +47,7 @@ const Dice: React.FC = () => {
                 disabled={!canRoll}
                 className={`w-24 h-24 p-0 bg-transparent border-none
                 ${canRoll ? 'cursor-pointer hover:scale-110 transform transition-transform' : 'cursor-not-allowed opacity-50'}`}
-                aria-label={canRoll ? "Roll dice" : "Dice"}
+                aria-label={canRoll ? "Kocok dadu" : "Dadu"}
             >
                 <div className="scene">
                     <div className={`cube ${isRolling ? 'is-rolling' : finalSideClass}`}>
@@ -61,7 +61,7 @@ const Dice: React.FC = () => {
                 </div>
             </button>
             <p className="mt-4 text-sm text-gray-400 font-semibold h-5">
-                {canRoll ? "Click to Roll!" : (diceValue !== null ? `You rolled a ${diceValue}!` : "Waiting for turn...")}
+                {canRoll ? "Klik untuk Mengocok!" : (diceValue !== null ? `Anda mendapatkan angka ${diceValue}!` : "Menunggu giliran...")}
             </p>
         </div>
     );
