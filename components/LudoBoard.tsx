@@ -1,8 +1,8 @@
 import React, { useContext, useMemo } from 'react';
 import { GameContext } from '../context/GameContext';
 import Piece from './Piece';
-import { BOARD_LAYOUT, PLAYER_AREA_LAYOUT, HOME_ENTRANCE, START_POSITIONS } from '../constants';
-import type { GameContextType, Piece as PieceType, PlayerColor } from '../types';
+import { BOARD_LAYOUT, PLAYER_AREA_LAYOUT, HOME_ENTRANCE, START_POSITIONS, HOME_PATH_START } from '../constants';
+import { GameContextType, Piece as PieceType, PlayerColor } from '../types';
 
 const LudoBoard: React.FC = () => {
     const { gameState, movePiece, loggedInUser } = useContext(GameContext) as GameContextType;
@@ -42,27 +42,33 @@ const LudoBoard: React.FC = () => {
     
     const renderCell = (row: number, col: number) => {
         const key = `${row}-${col}`;
-        let bgColor = 'bg-gray-700/50';
+        let bgColor = 'bg-gray-900'; // Default for cells outside the path
         let isStar = false;
         
-        // Paths
-        if (row === 8 && col > 1 && col < 8) bgColor = 'bg-red-500/70';
-        if (row === 8 && col > 8 && col < 15) bgColor = 'bg-yellow-500/70';
-        if (col === 8 && row > 1 && row < 8) bgColor = 'bg-green-500/70';
-        if (col === 8 && row > 8 && row < 15) bgColor = 'bg-blue-500/70';
-
-        if ((row > 6 && row < 10) || (col > 6 && col < 10)) {
+        // Color the main path cross shape
+        const isPath = (row >= 7 && row <= 9) || (col >= 7 && col <= 9);
+        if (isPath) {
             bgColor = 'bg-gray-800/60';
         }
+
+        // Color home paths
+        if (row === 8 && col >= 2 && col <= 7) bgColor = 'bg-red-500/70';      // Red home path
+        if (col === 8 && row >= 2 && row <= 7) bgColor = 'bg-green-500/70';    // Green home path
+        if (row === 8 && col >= 9 && col <= 14) bgColor = 'bg-yellow-500/70';  // Yellow home path
+        if (col === 8 && row >= 9 && row <= 14) bgColor = 'bg-blue-500/70';    // Blue home path
         
-        // Start cells
-        if (row === 7 && col === 2) { bgColor = 'bg-red-500/70'; isStar = true; }
-        if (row === 2 && col === 9) { bgColor = 'bg-green-500/70'; isStar = true; }
-        if (row === 9 && col === 14) { bgColor = 'bg-yellow-500/70'; isStar = true; }
-        if (row === 14 && col === 7) { bgColor = 'bg-blue-500/70'; isStar = true; }
+        // Mark start cells (they are also safe cells with stars)
+        if (row === 7 && col === 2) { bgColor = 'bg-red-500/70'; isStar = true; }   // Red start (pos 0)
+        if (row === 2 && col === 9) { bgColor = 'bg-green-500/70'; isStar = true; } // Green start (pos 13)
+        if (row === 9 && col === 14) { bgColor = 'bg-yellow-500/70'; isStar = true; } // Yellow start (pos 26)
+        if (row === 14 && col === 7) { bgColor = 'bg-blue-500/70'; isStar = true; } // Blue start (pos 39)
         
-        // Other safe cells
-        if ((row === 3 && col === 7) || (row === 7 && col === 13) || (row === 13 && col === 9) || (row === 9 && col === 3)) {
+        // Mark other safe cells with stars
+        if ((row === 3 && col === 7) ||   // pos 8
+            (row === 7 && col === 13) ||  // pos 21
+            (row === 13 && col === 9) ||  // pos 34
+            (row === 9 && col === 3)      // pos 47
+        ) {
              isStar = true;
         }
 
@@ -70,13 +76,15 @@ const LudoBoard: React.FC = () => {
     };
 
     const getHomeRunPosition = (piece: PieceType) => {
-        const offset = piece.position - 52;
+        const offset = piece.position - HOME_PATH_START; // offset is 0-5
+        if (offset < 0 || offset > 5) return null; 
+
         switch(piece.color) {
-            case 'red': return BOARD_LAYOUT[52 + offset];
-            case 'green': return BOARD_LAYOUT[58 + offset];
-            case 'yellow': return BOARD_LAYOUT[64 + offset];
-            case 'blue': return BOARD_LAYOUT[70 + offset];
-            default: return {row: 0, col: 0};
+            case PlayerColor.RED:    return { row: 8, col: 2 + offset };
+            case PlayerColor.GREEN:  return { row: 2 + offset, col: 8 };
+            case PlayerColor.YELLOW: return { row: 8, col: 14 - offset };
+            case PlayerColor.BLUE:   return { row: 14 - offset, col: 8 };
+            default: return null;
         }
     }
     
@@ -124,7 +132,7 @@ const LudoBoard: React.FC = () => {
             {Object.values(players).flatMap(player => player.pieces)
                 .filter(p => p.state !== 'home' && p.state !== 'finished')
                 .map(piece => {
-                    const pos = piece.position < 52 ? BOARD_LAYOUT[piece.position] : getHomeRunPosition(piece);
+                    const pos = piece.position < HOME_PATH_START ? BOARD_LAYOUT[piece.position] : getHomeRunPosition(piece);
                     if (!pos) return null;
 
                     // Each cell is 100/15 = 6.666...% of the board's dimension.
