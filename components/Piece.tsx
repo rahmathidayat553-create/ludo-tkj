@@ -19,18 +19,21 @@ const Piece: React.FC<PieceProps> = ({ piece, onClick, isMovable, style, isBounc
   };
 
   const movableClasses = isMovable
-    ? 'cursor-pointer ring-4 ring-offset-2 ring-offset-gray-800 ring-white animate-pulse'
+    ? 'cursor-pointer ring-4 ring-offset-2 ring-offset-gray-800 ring-white animate-pulse hover:shadow-xl hover:shadow-cyan-400/60'
     : '';
   
   const bounceClass = isBouncing ? 'piece-bounce' : '';
+  
+  // Terapkan efek hover yang lebih menonjol untuk bidak yang dapat digerakkan
+  const hoverEffectClass = isMovable ? 'hover:scale-125 hover:z-20' : 'hover:scale-110';
 
   return (
     <div
       onClick={isMovable ? onClick : undefined}
-      className={`absolute w-2/3 h-2/3 sm:w-5/6 sm:h-5/6 rounded-full flex items-center justify-center transition-all duration-500 ease-in-out transform hover:scale-110 ${style ? '' : 'z-10'} ${bounceClass}`}
+      className={`absolute w-2/3 h-2/3 sm:w-5/6 sm:h-5/6 rounded-full flex items-center justify-center transition-all duration-500 ease-in-out transform ${style ? '' : 'z-10'} ${bounceClass} ${hoverEffectClass}`}
       style={style}
     >
-      <div className={`w-full h-full rounded-full border-4 ${colorClasses[piece.color]} shadow-lg flex items-center justify-center ${movableClasses}`}>
+      <div className={`w-full h-full rounded-full border-4 ${colorClasses[piece.color]} shadow-lg flex items-center justify-center transition-shadow duration-300 ${movableClasses}`}>
           <div className="w-1/2 h-1/2 bg-white/30 rounded-full"></div>
       </div>
     </div>
