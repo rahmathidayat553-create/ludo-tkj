@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -11,6 +10,58 @@
       body {
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* 3D Dice Styles */
+      .scene {
+        width: 6rem; /* w-24 */
+        height: 6rem; /* h-24 */
+        perspective: 600px;
+      }
+
+      .cube {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 1s ease-out;
+      }
+      
+      .cube.is-rolling {
+        animation: roll 1s ease-out;
+      }
+
+      .cube__face {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 1.5rem; /* rounded-2xl */
+        background-color: #374151; /* bg-gray-700 */
+        border: 2px solid #4b5563; /* border-gray-600 */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Position each face of the cube */
+      .cube__face--1 { transform: rotateY(0deg) translateZ(3rem); }
+      .cube__face--6 { transform: rotateY(180deg) translateZ(3rem); }
+      .cube__face--4 { transform: rotateY(-90deg) translateZ(3rem); }
+      .cube__face--3 { transform: rotateY(90deg) translateZ(3rem); }
+      .cube__face--2 { transform: rotateX(90deg) translateZ(3rem); }
+      .cube__face--5 { transform: rotateX(-90deg) translateZ(3rem); }
+
+      /* Orient the cube to show the correct face */
+      .cube.show-1 { transform: translateZ(-3rem) rotateY(0deg); }
+      .cube.show-6 { transform: translateZ(-3rem) rotateY(-180deg); }
+      .cube.show-4 { transform: translateZ(-3rem) rotateY(90deg); }
+      .cube.show-3 { transform: translateZ(-3rem) rotateY(-90deg); }
+      .cube.show-2 { transform: translateZ(-3rem) rotateX(-90deg); }
+      .cube.show-5 { transform: translateZ(-3rem) rotateX(90deg); }
+
+      @keyframes roll {
+        0% { transform: rotateX(0deg) rotateY(0deg); }
+        100% { transform: rotateX(720deg) rotateY(1080deg); }
       }
     </style>
   <script type="importmap">
